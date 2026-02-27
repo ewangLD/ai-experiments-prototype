@@ -22,7 +22,13 @@ class QualityMetadata(BaseModel):
 
 class ChatResponse(BaseModel):
     reply: str
+    response_id: str = ""
     intent: str = ""
     entities: list[str] = Field(default_factory=list)
     quality: QualityMetadata = Field(default_factory=QualityMetadata)
     sources: list[dict] = Field(default_factory=list)
+
+
+class FeedbackRequest(BaseModel):
+    response_id: str
+    kind: str  # "positive" or "negative"

@@ -35,8 +35,11 @@ def generate_response(
     documents: list[dict],
     conversation_history: list[dict],
     context: Context,
-) -> str:
-    """Generate the final response using retrieved docs and intent."""
+) -> tuple[str, object]:
+    """Generate the final response using retrieved docs and intent.
+
+    Returns (reply_text, tracker) so the tracker can be used for feedback later.
+    """
     docs_text = "\n\n".join(
         f"[{d.get('title', 'Source')}]({d.get('url', '')})\n{d.get('content', '')}"
         for d in documents
@@ -53,7 +56,7 @@ def generate_response(
         },
     )
     if not config.enabled:
-        return "I'm sorry, I'm unable to help right now. Please try again later."
+        return "I'm sorry, I'm unable to help right now. Please try again later.", None
 
     messages = [{"role": m.role, "content": m.content} for m in config.messages]
 
@@ -71,4 +74,5 @@ def generate_response(
         )
     )
 
-    return result.choices[0].message.content or "I couldn't generate a response."
+    reply = result.choices[0].message.content or "I couldn't generate a response."
+    return reply, config.tracker

@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from "react";
-import type { ChatMessage, ChatResponse } from "../api/chat";
-import { sendMessage } from "../api/chat";
+import type { ChatMessage, ChatResponse, StepEvent } from "../api/chat";
+import { sendMessageStream } from "../api/chat";
 import Message from "./Message";
 import TracePanel from "./TracePanel";
+import ChainProgress from "./ChainProgress";
 
 interface DisplayMessage {
   role: "user" | "assistant";
@@ -14,6 +15,7 @@ export default function ChatWindow() {
   const [messages, setMessages] = useState<DisplayMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [steps, setSteps] = useState<StepEvent[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
   const sessionId = useRef(
     `session-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
@@ -21,7 +23,7 @@ export default function ChatWindow() {
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, steps]);
 
   const handleSend = async () => {
     const text = input.trim();
@@ -30,6 +32,7 @@ export default function ChatWindow() {
     setInput("");
     setMessages((prev) => [...prev, { role: "user", content: text }]);
     setLoading(true);
+    setSteps([]);
 
     try {
       const history: ChatMessage[] = messages.map((m) => ({
@@ -37,7 +40,12 @@ export default function ChatWindow() {
         content: m.content,
       }));
 
-      const response = await sendMessage(text, sessionId.current, history);
+      const response = await sendMessageStream(
+        text,
+        sessionId.current,
+        history,
+        (step) => setSteps((prev) => [...prev, step])
+      );
 
       setMessages((prev) => [
         ...prev,
@@ -53,6 +61,7 @@ export default function ChatWindow() {
       ]);
     } finally {
       setLoading(false);
+      setSteps([]);
     }
   };
 
@@ -105,11 +114,7 @@ export default function ChatWindow() {
             {msg.metadata && <TracePanel metadata={msg.metadata} />}
           </div>
         ))}
-        {loading && (
-          <div style={{ color: "#999", fontSize: 14, marginLeft: 4 }}>
-            Thinking...
-          </div>
-        )}
+        {loading && <ChainProgress steps={steps} />}
         <div ref={bottomRef} />
       </div>
 
