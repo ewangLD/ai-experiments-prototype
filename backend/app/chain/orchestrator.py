@@ -92,6 +92,8 @@ async def run_chain_stream(req: ChatRequest) -> AsyncGenerator[str, None]:
             reply = route_message
             parent_span.set_attribute("chain.intent", intent)
             parent_span.set_attribute("chain.entities", entities)
+            parent_span.set_attribute("retrieval.doc_count", 0)
+            parent_span.set_attribute("response.length", len(reply))
 
         else:
             # Full search chain: rewrite → retrieve → generate → judge
@@ -132,6 +134,8 @@ async def run_chain_stream(req: ChatRequest) -> AsyncGenerator[str, None]:
             parent_span.set_attribute("chain.quality.relevance", quality.get("relevance", 0.0))
             parent_span.set_attribute("chain.quality.faithfulness", quality.get("faithfulness", 0.0))
             parent_span.set_attribute("chain.quality.passed", quality.get("pass", False))
+            parent_span.set_attribute("retrieval.doc_count", len(documents))
+            parent_span.set_attribute("response.length", len(reply))
 
     finally:
         parent_span.end()

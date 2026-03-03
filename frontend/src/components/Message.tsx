@@ -1,4 +1,6 @@
 import { useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import type { ChatResponse } from "../api/chat";
 import { sendFeedback } from "../api/chat";
 
@@ -37,10 +39,14 @@ export default function Message({ role, content, metadata }: Props) {
             color: isUser ? "#fff" : "#1a1a1a",
             fontSize: 14,
             lineHeight: 1.5,
-            whiteSpace: "pre-wrap",
           }}
+          className={isUser ? undefined : "markdown-body"}
         >
-          {content}
+          {isUser ? (
+            content
+          ) : (
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+          )}
           {metadata?.sources && metadata.sources.length > 0 && (
             <div
               style={{
